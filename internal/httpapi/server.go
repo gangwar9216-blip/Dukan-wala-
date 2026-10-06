@@ -107,12 +107,30 @@ func (s Server) requireAuth(next http.Handler) http.Handler {
 func (s Server) requireAdmin(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		id := userID(r)
-		role, e := s.Store.UserRole(r.Context(), id)
-		if e != nil || role != "ADMIN" {
-			write(w, 403, map[string]string{"error": "admin access required"})
+
+		if id == "" {
+			write(w, 401, map[string]string{"error": "user id missing from token"})
 			return
 		}
+
+		role, e := s.Store.UserRole(r.Context(), id)
+
+		if e != nil {
+			fmt.Printf("ADMIN_ROLE_CHECK user_id=%s db_error=%v\n", id, e)
+			write(w, 500, map[string]string{"error": "could not check admin role"})
+			return
+		}
+
+		fmt.Printf("ADMIN_ROLE_CHECK user_id=%s role=%s\n", id, role)
+
+		if role != "ADMIN" {
+			write(w, 403, map[string]string{"error": "user role is " + role})
+			return
+		}
+
 		next.ServeHTTP(w, r)
+	})
+}
 	})
 }
 func (s Server) me(w http.ResponseWriter, r *http.Request) {
