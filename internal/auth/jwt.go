@@ -2,26 +2,65 @@ package auth
 
 import (
 	"errors"
-	"github.com/golang-jwt/jwt/v5"
 	"time"
+
+	"github.com/golang-jwt/jwt/v5"
 )
 
-type Manager struct{ Secret []byte }
+type Manager struct {
+	Secret []byte
+}
+
+type Claims struct {
+	UserID string `json:"uid"`
+	jwt.RegisteredClaims
+}
 
 func (m Manager) Issue(userID string) (string, error) {
-	c := jwt.MapClaims{"sub": userID, "exp": time.Now().Add(24 * time.Hour).Unix()}
-	return jwt.NewWithClaims(jwt.SigningMethodHS256, c).SignedString(m.Secret)
+	if userID == "" {
+		return "", errors.New("empty user id")
+	}
+
+	claims := Claims{
+		UserID: userID,
+		RegisteredClaims: jwt.RegisteredClaims{
+			Subject:   userID,
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+		},
+	}
+
+	return jwt.NewWithClaims(
+		jwt.SigningMethodHS256,
+		claims,
+	).SignedString(m.Secret)
 }
-func (m Manager) Parse(token string) (string, error) {
-	t, e := jwt.Parse(token, func(t *jwt.Token) (any, error) {
-		if t.Method.Alg() != jwt.SigningMethodHS256.Alg() {
-			return nil, errors.New("invalid signing method")
-		}
-		return m.Secret, nil
-	})
-	if e != nil || !t.Valid {
+
+func (m Manager) Parse(tokenString string) (string, error) {
+	var claims Claims
+
+	token, err := jwt.ParseWithClaims(
+		tokenString,
+		&claims,
+		func(t *jwt.Token) (any, error) {
+			if t.Method.Alg() != jwt.SigningMethodHS256.Alg() {
+				return nil, errors.New("invalid signing method")
+			}
+			return m.Secret, nil
+		},
+	)
+
+	if err != nil || !token.Valid {
 		return "", errors.New("invalid token")
 	}
-	s, e := t.Claims.GetSubject()
-	return s, e
+
+	if claims.UserID != "" {
+		return claims.UserID, nil
+	}
+
+	if claims.Subject != "" {
+		return claims.Subject, nil
+	}
+
+	return "", errors.New("user id missing from token")
 }
