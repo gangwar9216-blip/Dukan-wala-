@@ -1,5 +1,5 @@
 
-const API=localStorage.getItem('HC_API')||'https://healthcare-backend-lufm.onrender.com';
+const API=localStorage.getItem('HC_API')||'https://healthcare-backend-1ufm.onrender.com';
 let token=localStorage.getItem('HC_ADMIN_TOKEN')||'';
 const nav=['Dashboard','Users','Medical Help','Healthcare Network','Offers & Camps','Payments','Notifications'];
 async function api(path,opt={}){const r=await fetch(API+path,{...opt,headers:{'Content-Type':'application/json',...(opt.headers||{}),...(token?{Authorization:'Bearer '+token}:{})}});const text=await r.text();let data;try{data=JSON.parse(text)}catch{data=text}if(!r.ok)throw new Error(data?.error||'Request failed');return data}
