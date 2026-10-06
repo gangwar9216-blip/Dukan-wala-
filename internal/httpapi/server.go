@@ -242,6 +242,13 @@ func (s Server) verifyOTP(w http.ResponseWriter, r *http.Request) {
 		write(w, 500, map[string]string{"error": "could not save user"})
 		return
 	}
+	adminMobile := strings.TrimSpace(os.Getenv("ADMIN_MOBILE"))
+if adminMobile != "" && mobile == adminMobile {
+    if e := s.Store.SetRole(r.Context(), u.ID, "ADMIN"); e != nil {
+        write(w, 500, map[string]string{"error": "could not assign admin role"})
+        return
+    }
+}
 	tok, e := s.Auth.Issue(u.ID)
 	if e != nil {
 		write(w, 500, map[string]string{"error": "could not create token"})
