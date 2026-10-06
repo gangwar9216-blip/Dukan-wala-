@@ -244,20 +244,39 @@ func (s Server) verifyOTP(w http.ResponseWriter, r *http.Request) {
 	}
 	adminMobile := strings.TrimSpace(os.Getenv("ADMIN_MOBILE"))
 
-cleanMobile := strings.TrimSpace(mobile)
-cleanAdminMobile := strings.TrimSpace(adminMobile)
+cleanMobile := ""
+for _, c := range mobile {
+	if c >= '0' && c <= '9' {
+		cleanMobile += string(c)
+	}
+}
 
-cleanMobile = strings.TrimPrefix(cleanMobile, "+91")
-cleanAdminMobile = strings.TrimPrefix(cleanAdminMobile, "+91")
+cleanAdminMobile := ""
+for _, c := range adminMobile {
+	if c >= '0' && c <= '9' {
+		cleanAdminMobile += string(c)
+	}
+}
 
-cleanMobile = strings.ReplaceAll(cleanMobile, " ", "")
-cleanAdminMobile = strings.ReplaceAll(cleanAdminMobile, " ", "")
+if len(cleanMobile) > 10 {
+	cleanMobile = cleanMobile[len(cleanMobile)-10:]
+}
 
+if len(cleanAdminMobile) > 10 {
+	cleanAdminMobile = cleanAdminMobile[len(cleanAdminMobile)-10:]
+}
+fmt.Printf("ADMIN_CHECK configured=%t input_digits=%d admin_digits=%d match=%t\n", cleanAdminMobile != "", len(cleanMobile), len(cleanAdminMobile), cleanMobile == cleanAdminMobile)
 if cleanAdminMobile != "" && cleanMobile == cleanAdminMobile {
-    if e := s.Store.SetRole(r.Context(), u.ID, "ADMIN"); e != nil {
-        write(w, 500, map[string]string{"error": "could not assign admin role"})
-        return
-    }
+	if e := s.Store.SetRole(r.Context(), u.ID, "ADMIN"); e != nil {
+		write(w, 500, map[string]string{"error": "could not assign admin role"})
+		return
+	}
+
+	role, e := s.Store.UserRole(r.Context(), u.ID)
+	if e != nil || role != "ADMIN" {
+		write(w, 500, map[string]string{"error": "admin role was not saved"})
+		return
+	}
 }
 	tok, e := s.Auth.Issue(u.ID)
 	if e != nil {
