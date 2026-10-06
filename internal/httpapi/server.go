@@ -56,6 +56,7 @@ func (s Server) Router() http.Handler {
 			r.Post("/payments/pro/verify", s.verifyProPayment)
 		})
 		r.Group(func(r chi.Router) {
+			r.Use(s.requireAuth)
 			r.Use(s.requireAdmin)
 			r.Get("/admin/stats", s.adminStats)
 			r.Get("/admin/users", s.adminUsers)
