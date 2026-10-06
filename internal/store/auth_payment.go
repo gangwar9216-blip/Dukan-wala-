@@ -44,8 +44,24 @@ func (s Store) UserRole(ctx context.Context, id string) (string, error) {
 	return r, err
 }
 func (s Store) SetRole(ctx context.Context, id, role string) error {
-	_, e := s.DB.Exec(ctx, `UPDATE users SET role=$1,updated_at=now() WHERE id=$2`, role, id)
-	return e
+	var savedRole string
+
+	err := s.DB.QueryRow(
+		ctx,
+		`UPDATE users SET role=$1,updated_at=now() WHERE id=$2 RETURNING role`,
+		role,
+		id,
+	).Scan(&savedRole)
+
+	if err != nil {
+		return err
+	}
+
+	if savedRole != role {
+		return fmt.Errorf("role was not saved")
+	}
+
+	return nil
 }
 func (s Store) ActivatePro(ctx context.Context, uid string) error {
 	tx, err := s.DB.Begin(ctx)
