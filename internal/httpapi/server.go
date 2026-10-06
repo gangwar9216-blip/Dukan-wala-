@@ -243,7 +243,17 @@ func (s Server) verifyOTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	adminMobile := strings.TrimSpace(os.Getenv("ADMIN_MOBILE"))
-if adminMobile != "" && mobile == adminMobile {
+
+cleanMobile := strings.TrimSpace(mobile)
+cleanAdminMobile := strings.TrimSpace(adminMobile)
+
+cleanMobile = strings.TrimPrefix(cleanMobile, "+91")
+cleanAdminMobile = strings.TrimPrefix(cleanAdminMobile, "+91")
+
+cleanMobile = strings.ReplaceAll(cleanMobile, " ", "")
+cleanAdminMobile = strings.ReplaceAll(cleanAdminMobile, " ", "")
+
+if cleanAdminMobile != "" && cleanMobile == cleanAdminMobile {
     if e := s.Store.SetRole(r.Context(), u.ID, "ADMIN"); e != nil {
         write(w, 500, map[string]string{"error": "could not assign admin role"})
         return
