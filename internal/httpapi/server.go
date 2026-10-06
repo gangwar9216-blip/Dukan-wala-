@@ -29,7 +29,9 @@ type Server struct {
 
 func (s Server) Router() http.Handler {
 	r := chi.NewRouter()
-	r.Use(middleware.RequestID, middleware.RealIP, middleware.Recoverer, corsMiddleware, securityHeaders, bodyLimit(1<<20))
+    r.Use(middleware.RequestID, middleware.RealIP, middleware.Recoverer, corsMiddleware, securityHeaders, func(next http.Handler) http.Handler {
+    return bodyLimit(1<<20, next)
+})
 	generalLimiter := newIPLimiter(120, time.Minute)
 	authLimiter := newIPLimiter(10, time.Minute)
 	r.Use(func(next http.Handler) http.Handler { return routeRateLimit(generalLimiter, next) })
