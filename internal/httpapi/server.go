@@ -131,8 +131,6 @@ func (s Server) requireAdmin(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 	})
 }
-	})
-}
 func (s Server) me(w http.ResponseWriter, r *http.Request) {
 	u, e := s.Store.GetUser(r.Context(), userID(r))
 	if e != nil {
